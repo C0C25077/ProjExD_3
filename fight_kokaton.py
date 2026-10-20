@@ -89,7 +89,7 @@ class Beam:
     """
     こうかとんが放つビームに関するクラス
     """
-    def __init__(self, bird:"Bird"):
+    def __init__(self, bird: "Bird"):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん（Birdインスタンス）
@@ -141,6 +141,27 @@ class Bomb:
         screen.blit(self.img, self.rct)
 
 
+class Score:
+    """
+    打ち落とした爆弾の数を表示するスコアに関するクラス
+    """
+    def __init__(self):
+        self.fonto = pg.font.Font(None, 50)
+        self.color = (0, 0, 255)  # 文字色：青
+        self.value = 0            # スコアの初期値：0
+        self.img = self.fonto.render(f"Score: {self.value}", 0, self.color)
+        self.rct = self.img.get_rect()
+        self.rct.center = (100, HEIGHT - 50)  # 横座標：100，縦座標：画面下部から50
+
+    def update(self, screen: pg.Surface):
+        """
+        現在のスコアを表示させる文字列Surfaceを生成し，スクリーンにblitする
+        引数 screen：画面Surface
+        """
+        self.img = self.fonto.render(f"Score: {self.value}", 0, self.color)
+        screen.blit(self.img, self.rct)
+
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -151,6 +172,7 @@ def main():
     for _ in range(NUM_OF_BOMBS):
         bombs.append(Bomb((255, 0, 0), 10))
     beam = None  # ゲーム初期化時にはビームは存在しない
+    score = Score()  # Scoreインスタンスの生成
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -173,12 +195,13 @@ def main():
                 time.sleep(1)
                 return
 
-        for i,bomb in enumerate(bombs):
+        for i, bomb in enumerate(bombs):
             if beam is not None:
                 if beam.rct.colliderect(bomb.rct):  # ビームと爆弾の衝突判定
                     beam = None
                     bombs[i] = None
                     bird.change_img(9, screen)
+                    score.value += 1  # 爆弾を打ち落としたらスコアアップ（1点）
                     pg.display.update()
                     
         bombs = [bomb for bomb in bombs if bomb is not None]
@@ -189,6 +212,7 @@ def main():
             beam.update(screen)  
         for bomb in bombs:
             bomb.update(screen)
+        score.update(screen)  # updateメソッドを呼び出してスコアを描画
         pg.display.update()
         tmr += 1
         clock.tick(50)
