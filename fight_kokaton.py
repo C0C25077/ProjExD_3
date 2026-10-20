@@ -1,3 +1,4 @@
+# import math  # 角度辞書による度数指定に変更したため不要
 import os
 import random
 import sys
@@ -56,6 +57,7 @@ class Bird:
         self.img = __class__.imgs[(+5, 0)]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
+        self.dire = (+5, 0)  # こうかとんの向きを表すタプル（デフォルト：右向き）
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -81,7 +83,8 @@ class Bird:
         if check_bound(self.rct) != (True, True):
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.img = __class__.imgs[tuple(sum_mv)]
+            self.dire = tuple(sum_mv)  # 合計移動量が[0,0]でない時，self.direを更新
+            self.img = __class__.imgs[self.dire]
         screen.blit(self.img, self.rct)
 
 
@@ -89,16 +92,31 @@ class Beam:
     """
     こうかとんが放つビームに関するクラス
     """
+    # 向き(vx, vy)に応じた回転角度（度数参照用辞書）
+    angles = {
+        (+5, 0): 0,      # 右
+        (+5, -5): 45,    # 右上
+        (0, -5): 90,     # 上
+        (-5, -5): 135,   # 左上
+        (-5, 0): 180,    # 左
+        (-5, +5): 225,   # 左下
+        (0, +5): 270,    # 下
+        (+5, +5): 315,   # 右下
+    }
+
     def __init__(self, bird: "Bird"):
         """
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん（Birdインスタンス）
         """
-        self.img = pg.image.load(f"fig/beam.png")
+        self.vx, self.vy = bird.dire  # こうかとんの向きを速度に設定
+        angle = __class__.angles[(self.vx, self.vy)]  # 辞書から度数を直接参照
+        self.img = pg.transform.rotozoom(pg.image.load("fig/beam.png"), angle, 1.0)
         self.rct = self.img.get_rect()
-        self.rct.centery = bird.rct.centery  # ビームの中心縦座標 = こうかとんの中心縦座標
-        self.rct.left = bird.rct.right  # ビームの左座標 = こうかとんの右座標
-        self.vx, self.vy = +5, 0
+        
+        # こうかとんの向いている方向・サイズに応じたビーム初期位置設定
+        self.rct.centerx = bird.rct.centerx + bird.rct.width * self.vx / 5
+        self.rct.centery = bird.rct.centery + bird.rct.height * self.vy / 5
 
     def update(self, screen: pg.Surface):
         """
@@ -185,7 +203,6 @@ class Explosion:
         """
         self.life -= 1
         if self.life > 0:
-            # 目がチラチラしないよう5フレームごとに画像を切り替える工夫（life // 5 % 2）
             img_idx = (self.life // 5) % 2
             screen.blit(self.imgs[img_idx], self.rct)
 
