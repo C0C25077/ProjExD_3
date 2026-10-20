@@ -162,6 +162,34 @@ class Score:
         screen.blit(self.img, self.rct)
 
 
+class Explosion:
+    """
+    爆弾打ち落とし時の爆発エフェクトに関するクラス
+    """
+    def __init__(self, bomb: Bomb):
+        """
+        爆発エフェクトSurfaceリストの生成と位置・表示時間の設定
+        引数 bomb：爆発する爆弾（Bombインスタンス）
+        """
+        img0 = pg.image.load("fig/explosion.gif")
+        img1 = pg.transform.flip(img0, True, True)  # 上下左右にflipしたSurface
+        self.imgs = [img0, img1]
+        self.rct = img0.get_rect()
+        self.rct.center = bomb.rct.center  # 爆発した爆弾のrct.centerに座標を設定
+        self.life = 20  # 表示時間（爆発時間）life
+
+    def update(self, screen: pg.Surface):
+        """
+        爆発時間を減少させ，時間に応じて画像を交互に切り替えて描画する
+        引数 screen：画面Surface
+        """
+        self.life -= 1
+        if self.life > 0:
+            # 目がチラチラしないよう5フレームごとに画像を切り替える工夫（life // 5 % 2）
+            img_idx = (self.life // 5) % 2
+            screen.blit(self.imgs[img_idx], self.rct)
+
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -173,6 +201,7 @@ def main():
         bombs.append(Bomb((255, 0, 0), 10))
     # beam = None  # ゲーム初期化時にはビームは存在しない
     beams = []  # Beamインスタンスを複数扱うための空リスト
+    explosions = []  # Explosionインスタンス用の空リスト
     score = Score()  # Scoreインスタンスの生成
     clock = pg.time.Clock()
     tmr = 0
@@ -204,6 +233,7 @@ def main():
                         beams[i] = None
                         bombs[j] = None
                         bird.change_img(9, screen)
+                        explosions.append(Explosion(bomb))  # bombとbeamが衝突したらExplosionインスタンスを生成，リストにappend
                         score.value += 1  # 爆弾を打ち落としたらスコアアップ（1点）
                         pg.display.update()
                     
@@ -213,6 +243,9 @@ def main():
         # 画面の範囲外に出たビームをリストから削除する
         beams = [beam for beam in beams if check_bound(beam.rct) == (True, True)]
 
+        # lifeが0より大きいExplosionインスタンスだけのリストにする
+        explosions = [exp for exp in explosions if exp.life > 0]
+
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         # if beam is not None:
@@ -221,6 +254,8 @@ def main():
             beam.update(screen)
         for bomb in bombs:
             bomb.update(screen)
+        for exp in explosions:
+            exp.update(screen)  # updateメソッドを呼び出して爆発を描画
         score.update(screen)  # updateメソッドを呼び出してスコアを描画
         pg.display.update()
         tmr += 1
