@@ -80,6 +80,7 @@ class Bird:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
         self.rct.move_ip(sum_mv)
+        
         if check_bound(self.rct) != (True, True):
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
